@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum user_role {
+  team  @map("team")
+  admin @map("admin")
+}
+
+model User {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String    @unique
+  password  String
+  role      user_role @default(team)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  assignedProjects AssignedProject[] @relation("assignedProjects") //keep track of project assigned to team members
+  assignedTasks    AssignedTask[]    @relation("assignedTasks") //keep track of tasks assigned to team members
+
+  createdProjects Project[] //keep track of project created by admin
+  createdTasks    Task[] //keeps track created by admin
+
+  distributeProjectsToTeam AssignedProject[] @relation("distributeProjectsToTeam") //keep track of projects the admin assigned to team members
+  distributeTasksToTeam    AssignedTask[]    @relation("distributeTasksToTeam") //keep track of projects the admin assigned to team members
+
+  notifications Notification[]
+
+  @@index([email, createdAt, role])
+}
+
+model Project {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  details     String?
+  assignments AssignedProject[]
+  author      User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId    String            @db.ObjectId
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([authorId, createdAt, name])
+}
+
+model Task {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  details     String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  assignments AssignedTask[]
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId    String         @db.ObjectId
+
+  @@index([authorId, name, createdAt])
+}
+
+model AssignedProject {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  deadline DateTime
+
+  userId String @db.ObjectId
+  user   User   @relation("assignedProjects", fields: [userId], references: [id], onDelete: Cascade)
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String  @db.ObjectId
+
+  assignedBy   User   @relation("distributeProjectsToTeam", fields: [userId], references: [id], onDelete: Cascade)
+  assignedById String @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, projectId, createdAt, assignedById])
+}
+
+model AssignedTask {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+    deadline    DateTime
+
+  userId String @db.ObjectId
+  user   User   @relation("assignedTasks", fields: [userId], references: [id], onDelete: Cascade)
+
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String @db.ObjectId
+
+  assignedBy   User   @relation("distributeTasksToTeam", fields: [userId], references: [id], onDelete: Cascade)
+  assignedById String @db.ObjectId
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([userId, taskId, createdAt, assignedById])
+}
+
+model Notification {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  message String?
+  type    notification_type
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+enum notification_type {
+  assigned_to_task    @map("assigned_to_task")
+  assigned_to_project @map("assigned_to_project")
+  updated_task        @map("updated_task")
+  updated_project     @map("updated_project")
+}

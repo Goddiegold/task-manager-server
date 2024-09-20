@@ -1,0 +1,38 @@
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to Our Platform</title>
+    <style>
+      /* Add your responsive CSS styles here */ body { font-family: Arial,
+      sans-serif; background-color: #f2f2f2; text-align: center; padding: 20px;
+      } .container { max-width: 600px; margin: 0 auto; background-color:
+      #ffffff; border-radius: 10px; padding: 20px; } h1 { color: #333333; } p {
+      font-size: 16px; color: #666666; } .cta-button { display: inline-block;
+      padding: 10px 20px; background-color: #007bff; color: #ffffff;
+      text-decoration: none; border-radius: 5px; margin-top: 20px; font-weight:
+      bold; }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div style="text-align:center">
+        <img
+          src={{logo}}
+          alt=""
+          style="border:none;height:auto;width:250px;"
+        />
+      </div>
+      <p>Dear {{content.name}},</p>
+      <p>Thank you for registering on our platform. We are excited to have you
+        on board!</p>
+      <p>Here is your verfication code</p>
+      <p
+        style="letter-spacing: 3px; font-weight: 500; font-size: 30px;"
+      >{{content.otp}}</p>
+    </div>
+  </body>
+
+</html>
