@@ -25,7 +25,7 @@ export default class TaskRoute implements IControllerBase {
         this.router.get("/all", [userAuth], this.getTasks)
         this.router.delete("/:taskId", [userAuth], this.deleteTask)
         this.router.post("/assign/:taskId", [userAuth, authorizeWithRBAC([user_role.admin])], this.assignTask)
-        this.router.put("/:taskId", [userAuth], this.updateTask)
+        this.router.put("/:taskId", [userAuth, authorizeWithRBAC([user_role.admin])], this.updateTask)
     }
 
     createTask = async (req: AuthenticatedRequest, res: Response) => {

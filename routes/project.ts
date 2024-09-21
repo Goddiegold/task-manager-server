@@ -24,7 +24,7 @@ export default class ProjectRoute implements IControllerBase {
         this.router.get("/all", [userAuth], this.getProjects)
         this.router.delete("/:projectId", [userAuth], this.deleteProject)
         this.router.post("/assign/:projectId", [userAuth, authorizeWithRBAC([user_role.admin])], this.assignProject)
-        this.router.put("/:projectId", [userAuth], this.updateProject)
+        this.router.put("/:projectId", [userAuth, authorizeWithRBAC([user_role.admin])], this.updateProject)
     }
 
     createProject = async (req: AuthenticatedRequest, res: Response) => {
@@ -41,7 +41,7 @@ export default class ProjectRoute implements IControllerBase {
 
             const project = await this.prisma.project.create({
                 data: {
-                    ...req?.body, 
+                    ...req?.body,
                     authorId: req?.user?.id
                 }
             })
@@ -68,7 +68,9 @@ export default class ProjectRoute implements IControllerBase {
                     }
                 })
             } else {
-                projects = await this.prisma.project.findMany({})
+                projects = await this.prisma.project.findMany({
+                    include: { assignments: { select: { userId: true } } }
+                })
             }
 
 
@@ -95,8 +97,8 @@ export default class ProjectRoute implements IControllerBase {
     assignProject = async (req: AuthenticatedRequest, res: Response) => {
         try {
             const projectId = req.params?.projectId as string;
-            const userId = req?.body?.userId as string;
-            const deadline = req?.body?.deadline as Date;
+            const usersId = req?.body?.usersId as string[];
+            const deadline = req?.body?.deadline || new Date() as Date;
 
             const projectExist = await this.prisma.project.findFirst({
                 where: {
@@ -108,37 +110,36 @@ export default class ProjectRoute implements IControllerBase {
                 return res.status(400).json({ message: "Project not found!" })
             }
 
-            const alreadyAssigned = await this.prisma.assignedProject.findFirst({
+            const validUsers = await this.prisma.user.findMany({
                 where: {
-                    projectId,
-                    userId, 
-                    
+                    role: user_role.team,
+                    id: { in: usersId },
+                    assignedProjects: {
+                        none: {
+                            projectId
+                        }
+                    },
                 }
             })
 
-            if (alreadyAssigned) {
-                return res.status(400).json({ message: "This user have been assigned to this project already!" })
+            if (validUsers?.length > 0) {
+                await Promise.all([
+                    await this.prisma.assignedProject.createMany({
+                        data: validUsers.map(item => ({ userId: item.id, deadline, assignedById: req?.user?.id, projectId }))
+                    }),
+                    await this.prisma.notification.createMany({
+                        data: validUsers.map(item => ({
+                            userId: item.id,
+                            type: notification_type.assigned_to_project,
+                            message: `You just got assigned project:${projectExist.name}`
+                        }))
+                    })
+                ])
+                return res.status(200).json({ message: "Assigned successfully!" })
+            } else {
+                return res.status(400).json({ message: "User(s) have been assigned to this project or they exist on the platform!" })
             }
 
-
-            await this.prisma.assignedProject.create({
-                data: {
-                    projectId,
-                    userId,
-                    assignedById: req.user?.id,
-                    deadline
-                }
-            })
-
-            await this.prisma.notification.create({
-                data: {
-                    userId: req?.user?.id,
-                    type: notification_type.assigned_to_project,
-                    message: `You just got assigned project:${projectExist.name}`
-                }
-            })
-
-            return res.status(201).json({ message: "Assigned successfully!" })
         } catch (error) {
             return res.status(500).json(errorMessage(error))
         }
@@ -147,7 +148,7 @@ export default class ProjectRoute implements IControllerBase {
     updateProject = async (req: AuthenticatedRequest, res: Response) => {
         try {
             const projectId = req.params?.projectId;
-           const updatedProject =  await this.prisma.project.update({
+            const updatedProject = await this.prisma.project.update({
                 where: {
                     id: projectId,
                 },
@@ -156,7 +157,7 @@ export default class ProjectRoute implements IControllerBase {
                 }
             })
             return res.status(200).json({
-                result:updatedProject, 
+                result: updatedProject,
                 message: "Updated successfully!"
             })
         } catch (error) {
