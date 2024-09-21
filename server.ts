@@ -49,5 +49,5 @@ prisma.$connect().then(res => {
     throw new Error("info: Couldn't connect to DB!")
 })
 
-
+//runs background job
 jobs(prisma);
