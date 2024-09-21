@@ -8,13 +8,13 @@ import {
 } from '../app/utils/helpers';
 import { Router, Request, Response } from 'express';
 import { AuthenticatedRequest, IControllerBase, RequestType } from '../app/utils/types';
-import { userAuth } from '../app/middlewares';
+import { authorizeWithRBAC, userAuth } from '../app/middlewares';
 import { PrismaClient, user_role } from '@prisma/client';
 
 
 export default class UserRoute implements IControllerBase {
 
-    public path = 'auth'
+    public path = 'users'
     public router = Router()
 
     constructor(private prisma: PrismaClient) {
@@ -25,6 +25,7 @@ export default class UserRoute implements IControllerBase {
         this.router.post('/login', this.login)
         this.router.post('/register', this.register)
         this.router.get('/profile', userAuth, this.getProfile)
+        this.router.get("/team-members", [userAuth, authorizeWithRBAC([user_role.admin])], this.getTeamMembers)
 
     }
 
@@ -172,8 +173,10 @@ export default class UserRoute implements IControllerBase {
 
     getTeamMembers = async (req: AuthenticatedRequest, res: Response) => {
         try {
-            const members = await this.prisma.user.findMany({ 
-                where: { role: user_role.team } })
+            const members = await this.prisma.user.findMany({
+                where: { role: user_role.team }
+            })
+            return res.status(200).json({ result: members })
         } catch (error) {
             return res.status(500).json(errorMessage(error))
         }

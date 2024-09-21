@@ -24,12 +24,11 @@ export default class ProjectRoute implements IControllerBase {
         this.router.get("/all", [userAuth], this.getProjects)
         this.router.delete("/:projectId", [userAuth], this.deleteProject)
         this.router.post("/assign/:projectId", [userAuth, authorizeWithRBAC([user_role.admin])], this.assignProject)
-        this.router.patch("/:projectId", [userAuth], this.updateProject)
+        this.router.put("/:projectId", [userAuth], this.updateProject)
     }
 
     createProject = async (req: AuthenticatedRequest, res: Response) => {
         try {
-
             const projectExist = await this.prisma.project.findFirst({
                 where: {
                     name: req?.body?.name
@@ -42,7 +41,8 @@ export default class ProjectRoute implements IControllerBase {
 
             const project = await this.prisma.project.create({
                 data: {
-                    ...req?.body
+                    ...req?.body, 
+                    authorId: req?.user?.id
                 }
             })
 
@@ -111,7 +111,8 @@ export default class ProjectRoute implements IControllerBase {
             const alreadyAssigned = await this.prisma.assignedProject.findFirst({
                 where: {
                     projectId,
-                    userId
+                    userId, 
+                    
                 }
             })
 
@@ -146,7 +147,7 @@ export default class ProjectRoute implements IControllerBase {
     updateProject = async (req: AuthenticatedRequest, res: Response) => {
         try {
             const projectId = req.params?.projectId;
-            await this.prisma.project.update({
+           const updatedProject =  await this.prisma.project.update({
                 where: {
                     id: projectId,
                 },
@@ -155,6 +156,7 @@ export default class ProjectRoute implements IControllerBase {
                 }
             })
             return res.status(200).json({
+                result:updatedProject, 
                 message: "Updated successfully!"
             })
         } catch (error) {
