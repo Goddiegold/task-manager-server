@@ -11,7 +11,7 @@ async function sendEmail(mailData: any) {
 
 
         const emailTemplateSource = await fs.readFile(
-            path.join(__dirname, `../shared/templates/${content?.template}.hbs`), "utf8");
+            path.join(__dirname, `../service/templates/${content?.template}.hbs`), "utf8");
 
         const mailgunAuth = {
             auth: {
