@@ -9,8 +9,10 @@ export default function (prisma: PrismaClient, runJobs = false) { //set the valu
     //sends notification for pending projects
     //this cron job runs at midnight daily
     cron.schedule('0 0 * * *', async function () {
+        //@ts-ignore
+        const socketIOserverInstance = global?.socketIOServer as Socket | null
         const uncompletedTasks = await prisma.assignedProject.findMany({
-            include: { user: { select: { id: true } } },
+            include: { user: { select: { id: true, socketId: true, email: true } } },
             where: {
                 completed: false,
                 deadline: {
@@ -25,8 +27,12 @@ export default function (prisma: PrismaClient, runJobs = false) { //set the valu
 
         uncompletedTasks.map(item => {
             //send mail notification and real time notification to the user
-            if(sentNotifications.has(item.userId)) return;
+            if (sentNotifications.has(item.userId)) return;
             sentNotifications.add(item.userId)
+            socketIOserverInstance.to(item.user.socketId).emit("message", {
+                message: "You have a project you haven't completed!",
+            });
+
         })
     });
 
