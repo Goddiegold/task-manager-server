@@ -96,6 +96,8 @@ export default class UserRoute implements IControllerBase {
     }
 
     getProfile = async (req: AuthenticatedRequest, res: Response) => {
+           //@ts-ignore
+        //    console.log("socketIoServer", global?.socketIOServer)
         return res.status(200).json({
             result: filterUserProfile(req?.user),
         })

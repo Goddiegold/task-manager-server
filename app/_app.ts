@@ -2,12 +2,15 @@ import { IControllerBase } from './utils/types';
 import express from 'express'
 import { Application } from 'express'
 import { exec } from 'child_process';
+import { createServer, Server } from "node:http";
+import { Server as SocketIOServer } from 'socket.io';
+
 
 class App {
     public app: Application
     public port: number
-    // public server: Server
-    // public socketIOServer: SocketIOServer
+    public server: Server
+    public socketIOServer: SocketIOServer
 
     constructor(appInit: {
         port: number,
@@ -18,6 +21,17 @@ class App {
         this.port = appInit.port
         this.middlewares(appInit.middlewares)
         this.routes(appInit.controllers)
+
+        this.server = createServer(this.app)
+
+        this.socketIOServer = new SocketIOServer(this.server, {
+            cors: {
+                origin: "*",
+                methods: ["GET", "POST"]
+            }
+        })
+
+        global.socketIOServer = this.socketIOServer
     }
 
     private middlewares(middlewares: any[]) {
@@ -47,16 +61,17 @@ class App {
 
     public listen() {
         this.updateFromRepo()
+    
         this.app.get("/", (req, res) => {
             return res.status(200).send({
                 message: "Task Manager - V1.0"
             })
         })
-        this.app.listen(this.port, () => {
+        
+        this.server.listen(this.port, () => {
             console.log(`info: App running on http://localhost:${this.port}`)
         })
     }
-
 
 }
 

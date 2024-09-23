@@ -58,13 +58,20 @@ export default class ProjectRoute implements IControllerBase {
             let projects = [];
 
             if (!isAdmin) {
-                projects = await this.prisma.project.findMany({
-                    where: {
-                        assignments: {
-                            some: {
-                                userId: req.user?.id
-                            }
-                        }
+                // projects = await this.prisma.project.findMany({
+                //     where: {
+                //         assignments: {
+                //             some: {
+                //                 userId: req.user?.id
+                //             }
+                //         }
+                //     }
+                // })
+                projects = await this.prisma.assignedProject.findMany({
+                    where: { userId: req.user?.id },
+                    include: {
+                        assignedBy: { select: { name: true } },
+                        project: { select: { id: true, name: true, details: true } }
                     }
                 })
             } else {
