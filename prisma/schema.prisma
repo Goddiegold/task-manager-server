@@ -47,6 +47,8 @@ model Project {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
+  notifications Notification[]
+
   @@index([authorId, createdAt, name])
 }
 
@@ -59,6 +61,8 @@ model Task {
   assignments AssignedTask[]
   author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   authorId    String         @db.ObjectId
+
+  notifications Notification[]
 
   @@index([authorId, name, createdAt])
 }
@@ -73,7 +77,7 @@ model AssignedProject {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String  @db.ObjectId
 
-  assignedBy   User   @relation("distributeProjectsToTeam", fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy   User   @relation("distributeProjectsToTeam", fields: [assignedById], references: [id], onDelete: Cascade)
   assignedById String @db.ObjectId
 
   createdAt DateTime @default(now())
@@ -93,7 +97,7 @@ model AssignedTask {
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
   taskId String @db.ObjectId
 
-  assignedBy   User   @relation("distributeTasksToTeam", fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy   User   @relation("distributeTasksToTeam", fields: [assignedById], references: [id], onDelete: Cascade)
   assignedById String @db.ObjectId
 
   updatedAt DateTime @updatedAt
@@ -111,6 +115,12 @@ model Notification {
 
   message String?
   type    notification_type
+
+  projectId String?  @db.ObjectId
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  taskId String? @db.ObjectId
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())

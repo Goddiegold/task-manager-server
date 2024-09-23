@@ -56,7 +56,7 @@ socketIOServer.on('connection', (socket) => {
             if (socketId === prevSocketId) return;
             await prisma.user.update({ where: { id: userId }, data: { socketId } });
             console.log(`updated ${userId} socketId`);
-            return socket.emit("message", { message: "Welcome Back Brody!", data: socketId })
+            // return socket.emit("message", { message: "Welcome Back Brody!", data: socketId })
         } catch (error) {
             console.log(error); 
             return;
