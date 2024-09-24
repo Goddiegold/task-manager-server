@@ -74,6 +74,7 @@ export default class TaskRoute implements IControllerBase {
 
             if (!isAdmin) {
                 tasks = await this.prisma.task.findMany({
+                    orderBy: { createdAt: "desc" },
                     where: {
                         assignments: {
                             some: {
@@ -83,7 +84,7 @@ export default class TaskRoute implements IControllerBase {
                     }
                 })
             } else {
-                tasks = await this.prisma.task.findMany({})
+                tasks = await this.prisma.task.findMany({ orderBy: { createdAt: "desc" }, })
             }
 
 

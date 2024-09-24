@@ -72,6 +72,7 @@ export default class ProjectRoute implements IControllerBase {
                 //     }
                 // })
                 projects = await this.prisma.assignedProject.findMany({
+                    orderBy: { createdAt: "desc" },
                     where: { userId: req.user?.id },
                     include: {
                         assignedBy: { select: { name: true } },
@@ -80,6 +81,7 @@ export default class ProjectRoute implements IControllerBase {
                 })
             } else {
                 projects = await this.prisma.project.findMany({
+                    orderBy: { createdAt: "desc" },
                     include: { assignments: { select: { userId: true } } }
                 })
             }
