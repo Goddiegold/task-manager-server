@@ -9,6 +9,7 @@ import {
 } from '../app/utils/types';
 import { authorizeWithRBAC, userAuth } from '../app/middlewares';
 import { Socket } from 'socket.io';
+import sendEmail from '../app/service/mailService';
 
 
 export default class ProjectRoute implements IControllerBase {
@@ -125,7 +126,9 @@ export default class ProjectRoute implements IControllerBase {
             const validUsers = await this.prisma.user.findMany({
                 select: {
                     id: true,
-                    socketId: true
+                    socketId: true,
+                    email: true,
+                    name: true
                 },
                 where: {
                     role: user_role.team,
@@ -169,15 +172,24 @@ export default class ProjectRoute implements IControllerBase {
                     })
                 ])
 
-                if (!!socketIOserverInstance) {
-                    for (const user of validUsers) {
-                        if (user.socketId) {
-                            socketIOserverInstance.to(user.socketId).emit("message", {
-                                message: "You just got assigned a new project!",
-                                type: notification_type.assigned_to_project,
-                            });
-                        }
+                for (const user of validUsers) {
+                    if (!!socketIOserverInstance) {
+                        if (!user.socketId) return;
+                        socketIOserverInstance.to(user.socketId).emit("message", {
+                            message: "You just got assigned a new project!",
+                            type: notification_type.assigned_to_project,
+                        });
                     }
+
+                    sendEmail({
+                        template: "project-assigned",
+                        email: user.email,
+                        subject: "Project assigned to you",
+                        name: user.name,
+                        projectName: projectExist.name,
+                        url: `${process.env.FRONTEND_URL}/pages/login`,
+                        assignedBy: req?.user?.name
+                    })
                 }
                 return res.status(200).json({ message: "Assigned successfully!" })
             } else {
@@ -229,7 +241,7 @@ export default class ProjectRoute implements IControllerBase {
             const updatedAsssignedProject = await this.prisma.assignedProject.update({
                 include: {
                     assignedBy: {
-                        select: { socketId: true }
+                        select: { socketId: true, name: true, email: true }
                     },
                     project: {
                         select: { name: true }
@@ -239,11 +251,22 @@ export default class ProjectRoute implements IControllerBase {
                 data: { completed: true }
             })
 
-            if (socketIOserverInstance && updatedAsssignedProject.assignedBy.socketId) {
-                socketIOserverInstance.to(updatedAsssignedProject.assignedBy.socketId).emit("message", {
+            const assignedBy = updatedAsssignedProject.assignedBy
+            if (socketIOserverInstance && assignedBy.socketId) {
+                socketIOserverInstance.to(assignedBy.socketId).emit("message", {
                     message: `${req.user?.name} have updated the status of project - ${updatedAsssignedProject.project.name}!`
                 })
             }
+
+            sendEmail({
+                template: "project-update",
+                email: assignedBy.email,
+                subject: "Update on the project you assigned",
+                name: assignedBy.name,
+                projectName: updatedAsssignedProject.project.name,
+                url: `${process.env.FRONTEND_URL}/pages/login`,
+                teamMember: req?.user?.name
+            })
 
             return res.status(200).json({
                 message: "Updated project status successfully!"
@@ -259,7 +282,7 @@ export default class ProjectRoute implements IControllerBase {
             const result = await this.prisma.assignedProject.findMany({
                 include: {
                     user: { select: { name: true, email: true } },
-                    assignedBy: { select: { name: true  } }
+                    assignedBy: { select: { name: true } }
                 },
                 where: { projectId }
             })
