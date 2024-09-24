@@ -28,7 +28,7 @@ export default class ProjectRoute implements IControllerBase {
         this.router.post("/assign/:projectId", [userAuth, authorizeWithRBAC([user_role.admin])], this.assignProject)
         this.router.put("/:projectId", [userAuth, authorizeWithRBAC([user_role.admin])], this.updateProject)
         this.router.get("/update-status/:projectId", [userAuth, authorizeWithRBAC([user_role.team])], this.updateProjectStatus)
-        this.router.get("/updates", [userAuth, authorizeWithRBAC([user_role.admin])], this.getProjectUpdates)
+        this.router.get("/updates/:projectId", [userAuth, authorizeWithRBAC([user_role.admin])], this.getProjectUpdates)
     }
 
     createProject = async (req: AuthenticatedRequest, res: Response) => {
