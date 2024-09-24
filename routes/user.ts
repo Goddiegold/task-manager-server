@@ -26,6 +26,7 @@ export default class UserRoute implements IControllerBase {
         this.router.post('/register', this.register)
         this.router.get('/profile', userAuth, this.getProfile)
         this.router.get("/team-members", [userAuth, authorizeWithRBAC([user_role.admin])], this.getTeamMembers)
+        this.router.put("/notification-pref", [userAuth], this.updateNotificationPref)
 
     }
 
@@ -96,7 +97,7 @@ export default class UserRoute implements IControllerBase {
     }
 
     getProfile = async (req: AuthenticatedRequest, res: Response) => {
-           //@ts-ignore
+        //@ts-ignore
         //    console.log("socketIoServer", global?.socketIOServer)
         return res.status(200).json({
             result: filterUserProfile(req?.user),
@@ -179,6 +180,22 @@ export default class UserRoute implements IControllerBase {
                 where: { role: user_role.team }
             })
             return res.status(200).json({ result: members })
+        } catch (error) {
+            return res.status(500).json(errorMessage(error))
+        }
+    }
+
+    updateNotificationPref = async (req: AuthenticatedRequest, res: Response) => {
+        try {
+            await this.prisma.user.update({
+                where: {
+                    id: req?.user?.id
+                },
+                data: {
+                    ...req?.body
+                }
+            })
+            return res.status(200).json({ message: "Updated successfully!" })
         } catch (error) {
             return res.status(500).json(errorMessage(error))
         }

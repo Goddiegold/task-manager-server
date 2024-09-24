@@ -34,6 +34,10 @@ model User {
 
   socketId String?
 
+  emailNotification Boolean @default(true)
+
+  pushNotification Boolean @default(true)
+
   @@index([email, createdAt, role])
 }
 
