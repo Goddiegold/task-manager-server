@@ -27,7 +27,10 @@ const app = new App({
     middlewares: [
         helmet(),
         morgan('dev'),
-        cors(),
+        cors({
+            origin: process.env.FRONTEND_URL,
+            optionsSuccessStatus: 200,
+        }),
         compression(),
         mongoSanitize(),
         express.urlencoded({ extended: true, limit: "10mb" }),
@@ -58,7 +61,7 @@ socketIOServer.on('connection', (socket) => {
             console.log(`updated ${userId} socketId`);
             // return socket.emit("message", { message: "Welcome Back Brody!", data: socketId })
         } catch (error) {
-            console.log(error); 
+            console.log(error);
             return;
         }
     })
